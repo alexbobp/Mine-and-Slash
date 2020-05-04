@@ -161,21 +161,21 @@ def myCurseRelatons = {
 }
 
 
-curseforge {
-
-    def curseProp = new Properties()
-    File secretPropsFile = file("key.properties")
-    curseProp.load(secretPropsFile.newInputStream())
-
-
-    project {
-        apiKey = curseProp.getProperty('curseKey')
-        id = "${curse_id}"
-        releaseType = "${curse_release}"
-        changelogType = 'text'
-        changelog = file('CHANGELOG.txt')
-        addGameVersion("Forge")
-        relations(myCurseRelatons)
-        addArtifact(deobfJar)
-    }
-}
+//curseforge {
+//
+//    def curseProp = new Properties()
+//    File secretPropsFile = file("key.properties")
+//    curseProp.load(secretPropsFile.newInputStream())
+//
+//
+//    project {
+//        apiKey = curseProp.getProperty('curseKey')
+//        id = "${curse_id}"
+//        releaseType = "${curse_release}"
+//        changelogType = 'text'
+//        changelog = file('CHANGELOG.txt')
+//        addGameVersion("Forge")
+//        relations(myCurseRelatons)
+//        addArtifact(deobfJar)
+//    }
+//}
