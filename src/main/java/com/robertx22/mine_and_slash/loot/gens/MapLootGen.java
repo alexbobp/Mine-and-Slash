@@ -41,11 +41,6 @@ public class MapLootGen extends BaseLootGen {
     }
 
     @Override
-    public boolean hasLevelDistancePunishment() {
-        return false;
-    }
-
-    @Override
     public ItemStack generateOne() {
 
         MapBlueprint blueprint = new MapBlueprint(info.level, info.tier);
