@@ -47,6 +47,7 @@ public class OnMobDeathDrops {
                             return;
                         }
 
+                        CriteriaRegisters.DROP_LVL_PENALTY_TRIGGER.trigger(player, killer, victim);
 
                         ModEntityConfig config = SlashRegistry.getEntityConfig(entity, victim);
 
@@ -84,6 +85,8 @@ public class OnMobDeathDrops {
 
         int exp = (int) (mob.getLevel() * Rarities.Mobs.get(mob.getRarity())
                 .ExpOnKill() * multi);
+
+        exp = (int) LootUtils.ApplyLevelDistancePunishment(mob, player, exp);
 
         if (victim instanceof SlimeEntity) {
             exp /= 10;

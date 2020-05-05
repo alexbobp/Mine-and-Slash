@@ -39,6 +39,13 @@ public class MyAdvancements implements Consumer<Consumer<Advancement>> {
                 .withCriterion("crafting_table", InventoryChangeTrigger.Instance.forItems(Blocks.CRAFTING_TABLE))
                 .register(consu, id("root"));
 
+        Advancement lvlpenalty = Advancement.Builder.builder()
+                .withParent(parent)
+                .withDisplay(Items.GUNPOWDER, AdvTitles.LevelPenalty.locName(), AdvDescs.LevelPenalty
+                        .locName(), null, FrameType.TASK, true, true, false)
+                .withCriterion(id("lvl_penalty"), new DropLvlPenaltyTrigger.Instance(5))
+                .register(consu, id("lvl_penalty"));
+
         Advancement lvl_10 = levelAdv(10, AdvDescs.LevelUp10, parent, consu, ItemHammer.Items
                 .get(0));
         Advancement lvl_25 = levelAdv(20, AdvDescs.LevelUp, lvl_10, consu, ItemHammer.Items

@@ -13,6 +13,10 @@ public abstract class BaseLootGen {
 
     public abstract LootType lootType();
 
+    public boolean hasLevelDistancePunishment() {
+        return true;
+    }
+
     protected abstract ItemStack generateOne();
 
     public boolean condition() {
