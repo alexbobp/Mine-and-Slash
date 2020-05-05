@@ -18,30 +18,16 @@ public class LootUtils {
     public static float ApplyLevelDistancePunishment(UnitData mob, UnitData player,
                                                      float chance) {
 
-        int difference = Math.abs(player.getLevel() - mob.getLevel());
-        int maxlvl = ModConfig.INSTANCE.Server.MAXIMUM_PLAYER_LEVEL.get();
+        int difference = player.getLevel() - mob.getLevel();
 
         if (difference > LEVEL_DISTANCE_PUNISHMENT_ACTIVATION) {
-
-            // if a high lvl player is killing higher than max lvl mobs
-            if (player.getLevel() == maxlvl && mob.getLevel() > maxlvl) {
-                return chance;
-            }
-
-            float levelDiff = 1;
-
-            if (player.getLevel() > mob.getLevel()) {
-                levelDiff = (float) mob.getLevel() / (float) (player.getLevel());
-            } else {
-                levelDiff = (float) player.getLevel() / (float) (mob.getLevel());
-            }
+            float levelDiff = (float) mob.getLevel() / (float) (player.getLevel());
 
             if (levelDiff > 1) {
                 levelDiff = 1;
             }
 
             return chance * levelDiff;
-
         }
 
         return chance;

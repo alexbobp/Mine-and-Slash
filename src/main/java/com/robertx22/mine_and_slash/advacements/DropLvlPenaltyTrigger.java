@@ -82,7 +82,7 @@ public class DropLvlPenaltyTrigger implements ICriterionTrigger<DropLvlPenaltyTr
         }
 
         public boolean conditionIsMet(EntityCap.UnitData player, EntityCap.UnitData mob) {
-            int diff = MathHelper.abs(player.getLevel() - mob.getLevel());
+            int diff = player.getLevel() - mob.getLevel();
             return diff >= this.level;
         }
 
