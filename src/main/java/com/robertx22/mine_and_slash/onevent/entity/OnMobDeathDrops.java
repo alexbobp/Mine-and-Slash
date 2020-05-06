@@ -12,72 +12,98 @@ import com.robertx22.mine_and_slash.uncommon.capability.EntityCap.UnitData;
 import com.robertx22.mine_and_slash.uncommon.datasaving.Load;
 import com.robertx22.mine_and_slash.uncommon.enumclasses.Elements;
 import com.robertx22.mine_and_slash.uncommon.utilityclasses.NumberUtils;
+import com.robertx22.mine_and_slash.uncommon.utilityclasses.RandomUtils;
 import com.robertx22.mine_and_slash.uncommon.utilityclasses.WorldUtils;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.monster.SlimeEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 public class OnMobDeathDrops {
+    private static final int DROPRAD = 40;
+    private static final int DROPRADSQ = DROPRAD*DROPRAD;
+
+    private static List<ServerPlayerEntity> playersNearEntity(Entity entity) {
+        BlockPos pos = entity.getPosition();
+
+        return entity.world.getEntitiesWithinAABB(ServerPlayerEntity.class,
+                new AxisAlignedBB(
+                        entity.posX + DROPRAD,
+                        entity.posY + DROPRAD,
+                        entity.posZ + DROPRAD,
+                        entity.posX - DROPRAD,
+                        entity.posY - DROPRAD,
+                        entity.posZ - DROPRAD
+                ),
+                serverPlayerEntity -> serverPlayerEntity.getPosition().distanceSq(pos) <= DROPRADSQ);
+    }
 
     @SubscribeEvent
     public static void mobOnDeathDrop(LivingDeathEvent event) {
 
         try {
-
             LivingEntity entity = event.getEntityLiving();
-
-            if (entity.world.isRemote) {
+            if (entity.world.isRemote || entity instanceof PlayerEntity || !Load.hasUnit(entity))
                 return;
+
+            final Iterable<ServerPlayerEntity> killers;
+            final ServerPlayerEntity mainKiller;
+            {
+                List<ServerPlayerEntity> nearMob = playersNearEntity(entity);
+
+                if (event.getSource().getTrueSource() instanceof ServerPlayerEntity) {
+                    mainKiller = (ServerPlayerEntity)event.getSource().getTrueSource();
+                    Set<ServerPlayerEntity> s = new HashSet<>(nearMob);
+                    s.addAll(playersNearEntity(mainKiller));
+                    killers = s;
+                } else {
+                    killers = nearMob;
+                    mainKiller = nearMob.get(RandomUtils.RandomRange(0, nearMob.size()-1));
+                }
             }
 
-            if (!(entity instanceof PlayerEntity)) {
-                if (event.getSource().getTrueSource() instanceof ServerPlayerEntity) {
-                    if (Load.hasUnit(entity)) {
+            UnitData victim = Load.Unit(entity);
 
-                        ServerPlayerEntity player = (ServerPlayerEntity) event.getSource()
-                                .getTrueSource();
+            if (!victim.shouldDropLoot())
+                return;
 
-                        UnitData victim = Load.Unit(entity);
-                        UnitData killer = Load.Unit(player);
+            ModEntityConfig config = SlashRegistry.getEntityConfig(entity, victim);
+            final float loot_multi = (float) config.LOOT_MULTI;
+            final float exp_multi = (float) config.EXP_MULTI;
 
-                        if (victim.shouldDropLoot() == false) {
-                            return;
-                        }
+            for (ServerPlayerEntity player : killers) {
+                UnitData killer = Load.Unit(player);
 
-                        CriteriaRegisters.DROP_LVL_PENALTY_TRIGGER.trigger(player, killer, victim);
+                CriteriaRegisters.DROP_LVL_PENALTY_TRIGGER.trigger(player, killer, victim);
 
-                        ModEntityConfig config = SlashRegistry.getEntityConfig(entity, victim);
+                if (exp_multi > 0) {
+                    int exp = GiveExp(entity, player, killer, victim, exp_multi);
 
-                        float loot_multi = (float) config.LOOT_MULTI;
-                        float exp_multi = (float) config.EXP_MULTI;
-
-                        if (loot_multi > 0) {
-                            MasterLootGen.genAndDrop(victim, killer, entity, player);
-                        }
-
-                        if (exp_multi > 0) {
-                            int exp = GiveExp(entity, player, killer, victim, exp_multi);
-
-                            if (exp > 0) {
-                                DmgNumPacket packet = new DmgNumPacket(entity, Elements.Nature, "+" + NumberUtils
-                                        .formatNumber(exp) + " Exp!");
-                                packet.isExp = true;
-                                MMORPG.sendToClient(packet, player);
-                            }
-                        }
+                    if (exp > 0) {
+                        DmgNumPacket packet = new DmgNumPacket(entity, Elements.Nature, "+" + NumberUtils
+                                .formatNumber(exp) + " Exp!");
+                        packet.isExp = true;
+                        MMORPG.sendToClient(packet, player);
                     }
                 }
             }
 
-        } catch (
+            if (loot_multi > 0) {
+                MasterLootGen.genAndDrop(victim, Load.Unit(mainKiller), entity, mainKiller);
+            }
 
-                Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     private static int GiveExp(LivingEntity victim, PlayerEntity entity, UnitData player,
